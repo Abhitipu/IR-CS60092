@@ -1,7 +1,7 @@
 # IR-project
 
-created by :
+created by :<br>
 Abhinandan De
-Aryan Singh
-Pranav Rajput
-Vinit Raj
+<br>Aryan Singh
+<br>Pranav Rajput
+<br>Vinit Raj
