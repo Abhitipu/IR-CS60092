@@ -1,63 +1,90 @@
-import nltk
 import pickle
-import os
 import json
 import glob
 import string
+import pandas as pd
 from nltk.tokenize import word_tokenize
-from nltk.stem import 	WordNetLemmatizer
+from nltk.stem import WordNetLemmatizer
+
+
+def build_raw_doc(data_dir, id_maps):
+  """
+    Returns a dictionary of raw documents 
+    indexed by the cord id
+  """
+  # Get the cord ids
+  id_maps = pd.read_csv(coord_file)
+  id_maps = id_maps.reset_index('paper_id')
+  
+  my_raw_documents = dict()
+  for filename in glob.iglob(f"{data_dir}*.json", recursive = True):
+    with open(filename, 'r') as f:
+        data = json.load(f)
+      
+    # Get the paper id
+    paper_id = data['paper_id']
+    # Get the associated cord id
+    cord_id = id_maps.loc[paper_id].cord_id
+    
+    # Create if doesnt exist
+    if cord_id not in my_raw_documents:
+      my_raw_documents[cord_id] = ""
+      
+    # Get all the text from the files
+    for line in data['abstract']:
+      my_raw_documents[cord_id]+=(" "+line['text'])
+      
+  return my_raw_documents
+
+
+def preprocess_and_gen_tokens(text):
+  """
+    Takes a document and returns a set of
+    tokens in the document
+  """
+  wordnet_lemmatizer = WordNetLemmatizer()
+  # Remove punctuations
+  text = text.translate(str.maketrans('', '', string.punctuation))
+  # Tokenize
+  tokens = word_tokenize(text)
+  # Lemmatize
+  tokens = [wordnet_lemmatizer.lemmatize(word) for word in tokens]
+  # Return unique tokens
+  tokens = list(set(tokens))
+  return tokens
+
+
+def build_index(my_raw_documents):
+  """
+    Returns an inverted index
+  """ 
+  inverted_idx = dict()
+  
+  for cord_id in sorted(my_raw_documents):
+    # Get the tokens
+    tokens = preprocess_and_gen_tokens(my_raw_documents[cord_id])
+    # Add to the inverted index
+    for token in tokens:
+      if token not in inverted_idx:
+        inverted_idx[token] = []
+      inverted_idx[token].append(cord_id)
+      
+  return inverted_idx
+
+
+def save_index(inverted_idx, index_file):
+  """
+    Saves the inverted index to a file
+  """
+  with open(index_file, 'wb') as f:
+    pickle.dump(inverted_idx, f)
 
 
 if __name__ == "__main__":
-  directory = 'Data/CORD-19/'
-
-  inverted_idx = {}
-  wordnet_lemmatizer = WordNetLemmatizer()
-  cnt = 1
+  data_dir = 'Data/CORD-19/'
+  coord_file = 'Data/id_mapping.csv'
+  index_file = 'model_queries_10.bin'
   
-  # for filename in os.listdir(directory):
-  for filename in glob.iglob(f"{directory}*.json", recursive = True):
-      filepath = os.path.join(directory, filename)
-      # f = open(filepath)
-      # Ab chala
-      # Also object oriented nahi banana?
-        #   haa class karna hai
-        # idhar tab me kuch bakchodi ho rahi hai
-      # Class ke bina to maza nahi aayega : P
-      # Haan woh to samajh aa raha
-      # So index to bana liya? Ab commit and push peace
-      # git add, git commit, git out
-      # Aur Vinit : )  hogaya ab ? 
-      f = open(filename)
-      data = json.load(f)
-      paper_id = data['paper_id']
-      text = ""
-      for line in data['abstract']:
-        text+=(" "+line['text'])
-      
-      tokens = word_tokenize(text)
-      tokens = list(filter(lambda token: token not in string.punctuation, tokens))
-      tokens = [wordnet_lemmatizer.lemmatize(word) for word in tokens]
-      tokens = list(set(tokens))
-
-      for word in tokens:
-        if word in inverted_idx:
-          inverted_idx[word].append(paper_id)
-        else:
-          inverted_idx[word] = [paper_id]
-      if(cnt %1000 == 0):
-        print(f"Processed files {cnt} last paper_id : {paper_id}")
-      cnt+=1  
-
-
-  print(len(inverted_idx))
-  # machaya machaya bhai waise... agar hum files ko hi rename kar dein? haa yeh sahi lag raha kal karte hai
-  # Idea: id -> filename ek map rakh lete.. peace
-  # one sec
-  # before commit .bin ko bhi daal dena gitignore mein picke kar de raha hu upload 31 mb hai
-  # accha ye chal raha hai... mujhe laga wait kyu kar rahe lol hogaya!... karde pushhhhhh mai jaa raha
-  # Kaafi zyada hai na ... i mean.. koi faida hoga?no idea  # ignore hi kar dete, thik abhi commit me nahi dalta bin
-  for key in inverted_idx.keys():
-    inverted_idx[key].sort()
-  pickle.dump(inverted_idx, open('model_queries_10.bin', 'wb'))
-
+  my_raw_documents = build_raw_doc(data_dir, coord_file)
+  inverted_idx = build_index(my_raw_documents)  
+  save_index(inverted_idx, index_file)
