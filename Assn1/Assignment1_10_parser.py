@@ -2,6 +2,7 @@ import pandas as pd
 import string
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
+import sys
 
 def preprocess_and_gen_tokens(text):
   """
@@ -20,10 +21,15 @@ def preprocess_and_gen_tokens(text):
   return " ".join(tokens)
 
 if __name__ == "__main__":
-    query_file = "Data/queries.csv"
-    result_file = "Data/queries_10.txt"
-    
-    queries = pd.read_csv(query_file)
-    queries.drop(['question', 'narrative'], axis=1, inplace=True)
-    queries['query'] = queries['query'].map(lambda x: preprocess_and_gen_tokens(x))
-    queries.to_csv("Data/queries_10.txt", index=False)
+  n = len(sys.argv)
+  
+  if n < 2:
+    raise Exception("Error in format")
+  
+  query_file = sys.argv[1]
+  result_file = "Data/queries_10.txt"
+  
+  queries = pd.read_csv(query_file)
+  queries.drop(['question', 'narrative'], axis=1, inplace=True)
+  queries['query'] = queries['query'].map(lambda x: preprocess_and_gen_tokens(x))
+  queries.to_csv("Data/queries_10.txt", index=False)
