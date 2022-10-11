@@ -12,6 +12,9 @@ INSTRUCTIONS TO USE
 
 1. Install all requirements using pip3 install -r requirements.txt.
 2. Run using the specified commands.
+    1. python Assignment1_10_indexer.py ./Data/CORD-19
+    2. python Assignment1_10_parser.py ./Data/queries.csv
+    3. python Assignment1_10_bool.py ./model.bin ./queries_10.txt
 
 DEPENDENCIES
 

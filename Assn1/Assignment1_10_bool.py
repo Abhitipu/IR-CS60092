@@ -4,6 +4,9 @@ import pandas as pd
 import sys
 
 def mergePostingList(A, B):
+    """
+        Returns a list of intersection of two postings list A and B
+    """
     len_a, len_b = len(A), len(B)
     i , j = 0, 0
     result = []
@@ -19,6 +22,11 @@ def mergePostingList(A, B):
     return result
 
 def retrieveDocuments(inverted_idx, query):
+    """
+        returns the list of cord_ids 
+        corresponding to the documents 
+        containing the query tokens.
+    """
     if(query[0] not in inverted_idx.keys()):
         return []
     
@@ -50,7 +58,7 @@ if __name__ == "__main__":
         query_id = row['topic-id']
 
         cord_ids = retrieveDocuments(inverted_idx, query)
-        output = f"{query_id}: {' '.join(cord_ids)}"
+        output = f"{query_id} : {' '.join(cord_ids)}"
         outputs.append(output)
     
     outputs = '\n'.join(outputs)

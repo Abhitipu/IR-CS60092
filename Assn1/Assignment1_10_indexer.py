@@ -1,4 +1,3 @@
-from logging import raiseExceptions
 import pickle
 import json
 import glob
@@ -16,10 +15,7 @@ def build_raw_doc(data_dir, coord_file):
   """
   # Get the cord ids
   id_maps = pd.read_csv(coord_file, index_col='paper_id')
-  # id_maps = id_maps.reset_index('paper_id')
 
-  print(id_maps.head())
-  
   my_raw_documents = dict()
   counter = 0
   for filename in glob.iglob(f"{data_dir}*.json", recursive = True):
@@ -32,9 +28,7 @@ def build_raw_doc(data_dir, coord_file):
     # Get the paper id
     paper_id = data['paper_id']
     # Get the associated cord id
-    # data[data['paper_id'] == paper_id].cord_id
     cord_id = id_maps.loc[paper_id].cord_id
-    # print(cord_id)
     # Create if doesnt exist
     if cord_id not in my_raw_documents:
       my_raw_documents[cord_id] = ""
@@ -52,6 +46,8 @@ def preprocess_and_gen_tokens(text):
     tokens in the document
   """
   wordnet_lemmatizer = WordNetLemmatizer()
+  # Case Normalization
+  text = text.lower()
   # Remove punctuations
   text = text.translate(str.maketrans('', '', string.punctuation))
   # Tokenize
@@ -100,12 +96,8 @@ if __name__ == "__main__":
   
   if n < 2:
       raise Exception("Error in format")
-      
 
   data_dir = sys.argv[1] + '/'
-  # coord_file = sys.argv[2]
-  # index_file = sys.argv[3]
-
   
   my_raw_documents = build_raw_doc(data_dir, coord_file)
   print('Raw documents built')

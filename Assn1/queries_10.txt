@@ -1,0 +1,41 @@
+topic-id,query
+1,origin coronavirus
+2,response coronavirus weather to change
+3,immunity coronavirus
+4,the people die from do coronavirus how
+5,model of animal COVID19
+6,rapid testing coronavirus test
+7,serological coronavirus for test
+8,under coronavirus reporting
+9,Canada in coronavirus
+10,impact social distancing coronavirus
+11,hospital rationing coronavirus
+12,quarantine coronavirus
+13,how doe coronavirus spread
+14,spreader super coronavirus
+15,outside body coronavirus
+16,doe long on coronavirus survive how surface
+17,clinical trial coronavirus
+18,mask prevent coronavirus
+19,coronavirus sanitizer what alcohol kill
+20,and inhibitor ACE coronavirus
+21,mortality coronavirus
+22,heart impact coronavirus
+23,hypertension coronavirus
+24,coronavirus diabetes
+25,biomarkers coronavirus
+26,early symptom coronavirus
+27,asymptomatic coronavirus
+28,hydroxychloroquine coronavirus
+29,drug repurposing coronavirus
+30,coronavirus remdesivir
+31,between coronavirus flu and difference
+32,subtypes coronavirus
+33,vaccine coronavirus candidate
+34,recovery coronavirus
+35,datasets public coronavirus
+36,spike SARSCoV2 structure
+37,phylogenetic analysis SARSCoV2
+38,COVID response inflammatory
+39,COVID19 cytokine storm
+40,mutation coronavirus

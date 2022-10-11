@@ -27,9 +27,9 @@ if __name__ == "__main__":
     raise Exception("Error in format")
   
   query_file = sys.argv[1]
-  result_file = "Data/queries_10.txt"
+  result_file = "queries_10.txt"
   
   queries = pd.read_csv(query_file)
   queries.drop(['question', 'narrative'], axis=1, inplace=True)
   queries['query'] = queries['query'].map(lambda x: preprocess_and_gen_tokens(x))
-  queries.to_csv("Data/queries_10.txt", index=False)
+  queries.to_csv("queries_10.txt", index=False)
