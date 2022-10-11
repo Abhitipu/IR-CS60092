@@ -2,6 +2,7 @@ import pandas as pd
 import string
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
+from nltk.corpus import stopwords
 import sys
 
 def preprocess_and_gen_tokens(text):
@@ -9,13 +10,16 @@ def preprocess_and_gen_tokens(text):
     Takes a document and returns a set of
     tokens in the document AS A STRING
   """
+  stop_words = set(stopwords.words('english'))
   wordnet_lemmatizer = WordNetLemmatizer()
   # Case Normalization
   text = text.lower()
   # Remove punctuations
   text = text.translate(str.maketrans('', '', string.punctuation))
   # Tokenize
-  tokens = word_tokenize(text)
+  tokens = list(set(word_tokenize(text)))
+  # Remove Stopwords
+  tokens = [w for w in tokens if not w in stop_words]
   # Lemmatize
   tokens = [wordnet_lemmatizer.lemmatize(word) for word in tokens]
   # Return unique tokens
