@@ -1,41 +1,41 @@
 topic-id,query
-1,origin coronavirus
-2,response coronavirus weather to change
-3,immunity coronavirus
-4,the people die from do coronavirus how
-5,model of animal COVID19
-6,rapid testing coronavirus test
-7,serological coronavirus for test
-8,under coronavirus reporting
-9,Canada in coronavirus
-10,impact social distancing coronavirus
-11,hospital rationing coronavirus
+1,coronavirus origin
+2,change coronavirus response weather to
+3,coronavirus immunity
+4,do the people coronavirus how die from
+5,animal of model covid19
+6,test testing coronavirus rapid
+7,test serological for coronavirus
+8,coronavirus reporting under
+9,coronavirus in canada
+10,distancing social coronavirus impact
+11,hospital coronavirus rationing
 12,quarantine coronavirus
-13,how doe coronavirus spread
-14,spreader super coronavirus
-15,outside body coronavirus
-16,doe long on coronavirus survive how surface
-17,clinical trial coronavirus
-18,mask prevent coronavirus
-19,coronavirus sanitizer what alcohol kill
-20,and inhibitor ACE coronavirus
-21,mortality coronavirus
+13,how spread coronavirus doe
+14,super coronavirus spreader
+15,body coronavirus outside
+16,long coronavirus doe how surface survive on
+17,clinical coronavirus trial
+18,prevent coronavirus mask
+19,kill what coronavirus alcohol sanitizer
+20,ace inhibitor coronavirus and
+21,coronavirus mortality
 22,heart impact coronavirus
 23,hypertension coronavirus
-24,coronavirus diabetes
-25,biomarkers coronavirus
-26,early symptom coronavirus
+24,diabetes coronavirus
+25,coronavirus biomarkers
+26,symptom coronavirus early
 27,asymptomatic coronavirus
-28,hydroxychloroquine coronavirus
-29,drug repurposing coronavirus
-30,coronavirus remdesivir
-31,between coronavirus flu and difference
+28,coronavirus hydroxychloroquine
+29,coronavirus drug repurposing
+30,remdesivir coronavirus
+31,flu difference coronavirus between and
 32,subtypes coronavirus
 33,vaccine coronavirus candidate
-34,recovery coronavirus
-35,datasets public coronavirus
-36,spike SARSCoV2 structure
-37,phylogenetic analysis SARSCoV2
-38,COVID response inflammatory
-39,COVID19 cytokine storm
-40,mutation coronavirus
+34,coronavirus recovery
+35,datasets coronavirus public
+36,sarscov2 structure spike
+37,analysis sarscov2 phylogenetic
+38,covid response inflammatory
+39,storm cytokine covid19
+40,coronavirus mutation

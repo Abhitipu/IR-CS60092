@@ -10,6 +10,8 @@ def preprocess_and_gen_tokens(text):
     tokens in the document AS A STRING
   """
   wordnet_lemmatizer = WordNetLemmatizer()
+  # Case Normalization
+  text = text.lower()
   # Remove punctuations
   text = text.translate(str.maketrans('', '', string.punctuation))
   # Tokenize
