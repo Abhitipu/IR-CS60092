@@ -6,7 +6,8 @@ FILES SUBMITTED
 - Assignment1_10_results.txt
 - README.txt
 - requirements.txt
-- DEFAULT-IR-TP-19CS10069.pdf
+- Group 10 IR Project Details and Contributions.pdf
+- DEFAULT-IR-TP-19CS10069.zip
 
 INSTRUCTIONS TO USE
 
@@ -14,7 +15,7 @@ INSTRUCTIONS TO USE
 2. Run using the specified commands.
     1. python Assignment1_10_indexer.py ./Data/CORD-19
     2. python Assignment1_10_parser.py ./Data/queries.csv
-    3. python Assignment1_10_bool.py ./model.bin ./queries_10.txt
+    3. python Assignment1_10_bool.py ./model_queries_10.bin ./queries_10.txt
 
 DEPENDENCIES
 
