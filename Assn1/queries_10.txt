@@ -1,26 +1,26 @@
 topic-id,query
 1,coronavirus origin
-2,coronavirus change weather response
+2,response coronavirus weather change
 3,coronavirus immunity
-4,coronavirus people die
-5,model covid19 animal
-6,coronavirus rapid testing test
-7,coronavirus serological test
+4,die coronavirus people
+5,animal 19 covid model
+6,rapid coronavirus test testing
+7,coronavirus test serological
 8,coronavirus reporting
 9,coronavirus canada
-10,coronavirus distancing social impact
+10,coronavirus distancing impact social
 11,coronavirus rationing hospital
 12,coronavirus quarantine
 13,coronavirus spread
-14,coronavirus spreader super
-15,coronavirus outside body
-16,coronavirus survive long surface
-17,coronavirus clinical trial
-18,coronavirus mask prevent
-19,coronavirus sanitizer alcohol kill
+14,coronavirus super spreader
+15,outside coronavirus body
+16,coronavirus surface long survive
+17,coronavirus trial clinical
+18,mask coronavirus prevent
+19,coronavirus sanitizer kill alcohol
 20,coronavirus ace inhibitor
 21,coronavirus mortality
-22,coronavirus heart impact
+22,coronavirus impact heart
 23,coronavirus hypertension
 24,coronavirus diabetes
 25,coronavirus biomarkers
@@ -28,14 +28,14 @@ topic-id,query
 27,coronavirus asymptomatic
 28,coronavirus hydroxychloroquine
 29,coronavirus drug repurposing
-30,coronavirus remdesivir
+30,remdesivir coronavirus
 31,coronavirus difference flu
 32,coronavirus subtypes
 33,coronavirus candidate vaccine
 34,coronavirus recovery
-35,coronavirus datasets public
-36,structure sarscov2 spike
-37,phylogenetic analysis sarscov2
+35,coronavirus public datasets
+36,sars spike cov 2 structure
+37,phylogenetic sars cov analysis 2
 38,response inflammatory covid
-39,cytokine covid19 storm
+39,19 cytokine covid storm
 40,coronavirus mutation

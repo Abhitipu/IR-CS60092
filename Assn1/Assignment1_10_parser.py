@@ -15,7 +15,7 @@ def preprocess_and_gen_tokens(text):
   # Case Normalization
   text = text.lower()
   # Remove punctuations
-  text = text.translate(str.maketrans('', '', string.punctuation))
+  text = text.translate(str.maketrans(string.punctuation, ' '*len(string.punctuation)))
   # Tokenize
   tokens = list(set(word_tokenize(text)))
   # Remove Stopwords
