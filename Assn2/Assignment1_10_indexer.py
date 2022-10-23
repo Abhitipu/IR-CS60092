@@ -3,11 +3,11 @@ import json
 import glob
 import string
 import pandas as pd
+from collections import Counter
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
 import sys
-
 
 def build_raw_doc(data_dir, coord_file):
   """
@@ -53,14 +53,14 @@ def preprocess_and_gen_tokens(text):
   # Remove punctuations
   text = text.translate(str.maketrans(string.punctuation, ' '*len(string.punctuation)))
   # Tokenize
-  tokens = list(set(word_tokenize(text)))
+  tokens = list(word_tokenize(text))
   # Remove Stopwords
   tokens = [w for w in tokens if not w in stop_words]
   # Lemmatize
   tokens = [wordnet_lemmatizer.lemmatize(word) for word in tokens]
-  # Return unique tokens
-  tokens = list(set(tokens))
-  return tokens
+  # Return all tokens
+  tokens = list(tokens)
+  return Counter(tokens)
 
 
 def build_index(my_raw_documents):
@@ -74,12 +74,12 @@ def build_index(my_raw_documents):
       print(f"Iteration {counter} started")
     counter += 1
     # Get the tokens
-    tokens = preprocess_and_gen_tokens(my_raw_documents[cord_id])
+    token_with_freq = preprocess_and_gen_tokens(my_raw_documents[cord_id])
     # Add to the inverted index
-    for token in tokens:
+    for token, freq in token_with_freq.items():
       if token not in inverted_idx:
         inverted_idx[token] = []
-      inverted_idx[token].append(cord_id)
+      inverted_idx[token].append((cord_id, freq))
       
   return inverted_idx
 
