@@ -8,7 +8,8 @@ from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
 import sys
-
+import nltk
+nltk.download("stopwords")
 def build_raw_doc(data_dir, coord_file):
   """
     Returns a dictionary of raw documents 
