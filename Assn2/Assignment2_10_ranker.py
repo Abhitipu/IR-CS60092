@@ -28,10 +28,10 @@ def compute_tf_idf(word_list, op_type, V, N):
     for idx, freq in word_list:
       final_vector[idx] = freq
           
-    if op_type == "l":
+    if op_type[0] == "l":
       final_vector = np.log(1 + final_vector)
       
-    elif op_type == "a":
+    elif op_type[0] == "a":
       final_vector = 0.5 + 0.5 * final_vector / np.max(final_vector)
 
   # Second operation
@@ -39,17 +39,17 @@ def compute_tf_idf(word_list, op_type, V, N):
     return Exception("Invalid operation")
   
   else:
-    if op_type == "t":
+    if op_type[1] == "t":
       final_vector = np.log(N / final_vector)
       
-    elif op_type == "p":
+    elif op_type[1] == "p":
       final_vector = np.log(N / final_vector - 1)
   
   # Third operation
   if op_type[2] not in "cn":
     return Exception("Invalid operation")
   
-  return final_vector / np.linalg.norm(final_vector) if op_type == "c" else final_vector
+  return final_vector / np.linalg.norm(final_vector) if op_type[2] == "c" else final_vector
 
 
 def transpose_inv_idx(inv_idx):
