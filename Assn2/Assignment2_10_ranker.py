@@ -2,6 +2,7 @@ import pickle
 import numpy as np
 import pandas as pd
 from collections import Counter
+np.seterr(divide='ignore', invalid='ignore')
 
 
 def compute_tf_idf(word_list, op_type, V, N):
@@ -16,6 +17,7 @@ def compute_tf_idf(word_list, op_type, V, N):
   Returns:
       final_vector : the vector representing the term
   """
+  print("computing tf id")
   
   op_type = op_type.lower()
   final_vector = np.zeros(V)
@@ -39,8 +41,9 @@ def compute_tf_idf(word_list, op_type, V, N):
     return Exception("Invalid operation")
   
   else:
+    final_vector = final_vector + 1e-20
     if op_type[1] == "t":
-      final_vector = np.log(N / final_vector)
+      final_vector = np.log(N / final_vector )
       
     elif op_type[1] == "p":
       final_vector = np.log(N / final_vector - 1)
@@ -127,7 +130,7 @@ def get_ranks(new_idx, query_vector, V, method, output_file):
       f.write(str(query_id) + ",")
       query_vector = compute_tf_idf(query_token_list, query_method, V, len(new_idx.keys()))
       
-      for doc_id, doc_token_list in doc_vector.items():
+      for doc_id, doc_token_list in new_idx.items():
         doc_vector = compute_tf_idf(doc_token_list, doc_method, V, len(new_idx.keys()))
         scores.append((doc_id, np.dot(query_vector, doc_vector)))
         
