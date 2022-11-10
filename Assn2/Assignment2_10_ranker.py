@@ -2,10 +2,11 @@ import pickle
 import numpy as np
 import pandas as pd
 from collections import Counter
+import ipdb
 np.seterr(divide='ignore', invalid='ignore')
 
 
-def compute_tf_idf(word_list, op_type, V, N):
+def compute_tf_idf(word_list, op_type, V, N, df):
   """
   Applies the term freq operation on the word list
 
@@ -21,6 +22,7 @@ def compute_tf_idf(word_list, op_type, V, N):
   
   op_type = op_type.lower()
   final_vector = np.zeros(V)
+  idf_vector = np.ones(V)
   
   # First operation
   if op_type[0] not in "lan":
@@ -41,18 +43,24 @@ def compute_tf_idf(word_list, op_type, V, N):
     return Exception("Invalid operation")
   
   else:
-    final_vector = final_vector + 1e-20
+    # final_vector = final_vector + 1e-20
+    # ipdb.set_trace()
+    
     if op_type[1] == "t":
-      final_vector = np.log(N / final_vector )
+      idf_vector = np.log(N / df)
       
     elif op_type[1] == "p":
-      final_vector = np.log(N / final_vector - 1)
+      idf_vector = np.log(N / df - 1)
+      idf_vector[idf_vector < 0] = 0
+  # ipdb.set_trace()
+  final_vector = final_vector * idf_vector
+  # ipdb.set_trace()
   
   # Third operation
   if op_type[2] not in "cn":
     return Exception("Invalid operation")
   
-  return final_vector / np.linalg.norm(final_vector) if op_type[2] == "c" else final_vector
+  return final_vector / (np.linalg.norm(final_vector) + 1e-20) if op_type[2] == "c" else final_vector
 
 
 def transpose_inv_idx(inv_idx):
@@ -68,20 +76,23 @@ def transpose_inv_idx(inv_idx):
       idf(dict): token to idf mapping
   """
   
-  idf = dict()
+  # df = dict()
   N = len(inv_idx.keys())
+  df = [0]*N
   new_idx = dict()
   mapper = dict()
   
   for idx, key in enumerate(sorted(inv_idx.keys())):
       mapper[key] = idx
-      idf[key] = np.log(N / len(inv_idx[key]))
+      df[idx] = len(inv_idx[key])
       for cord_id, freq in inv_idx[key]:
         if cord_id not in new_idx:
           new_idx[cord_id] = []
         new_idx[cord_id].append((idx, freq))
   
-  return new_idx, mapper, idf
+  # df = list(df.values())
+  
+  return new_idx, mapper, np.array(df)
 
 
 def get_query_postings(queries, mapper):
@@ -113,7 +124,7 @@ def get_query_postings(queries, mapper):
   return query_vector
 
 
-def get_ranks(new_idx, query_vector, V, method, output_file):
+def get_ranks(new_idx, query_vector, V, method, output_file, df):
   """Returns a dict containing the query id vs the docs
 
   Args:
@@ -128,17 +139,24 @@ def get_ranks(new_idx, query_vector, V, method, output_file):
     for query_id, query_token_list in query_vector.items():
       scores = []
       f.write(str(query_id) + ",")
-      query_vector = compute_tf_idf(query_token_list, query_method, V, len(new_idx.keys()))
-      
+      query_vector = compute_tf_idf(query_token_list, query_method, V, len(new_idx.keys()), df)
+      # ipdb.set_trace()
       for doc_id, doc_token_list in new_idx.items():
-        doc_vector = compute_tf_idf(doc_token_list, doc_method, V, len(new_idx.keys()))
+        # ipdb.set_trace()
+        doc_vector = compute_tf_idf(doc_token_list, doc_method, V, len(new_idx.keys()), df)
+        # ipdb.set_trace()
         scores.append((doc_id, np.dot(query_vector, doc_vector)))
         
       scores.sort(key=lambda x: x[1], reverse=True) 
+      # ipdb.set_trace()
       scores = scores[:50]
       for score in scores:
         f.write(str(score[0]) + ",")
       f.write("\n")
+
+
+
+
 
 if __name__ == "__main__":
   inv_idx_file = "model_queries_10.bin"
@@ -154,12 +172,15 @@ if __name__ == "__main__":
     inv_idx = pickle.load(f)
   
   # Transpose inverted index for optimizing space
-  new_idx, mapper, idf = transpose_inv_idx(inv_idx)  
-  
+  new_idx, mapper, df = transpose_inv_idx(inv_idx)  
+  # print (new_idx)
+  # print( mapper.items())
+  # print(df)
   # Get queries to tokens mapping
   queries = pd.read_csv(query_file)
   query_vector = get_query_postings(queries, mapper)
+  # ipdb.set_trace()
   
   # Get the ranks and save for different configs
   for config, output_file in configs.items():
-    get_ranks(new_idx, query_vector, len(mapper), config, output_file)
+    get_ranks(new_idx, query_vector, len(mapper), config, output_file, df)

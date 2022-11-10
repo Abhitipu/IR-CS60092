@@ -1,0 +1,36 @@
+topic-id,query
+1,coronavirus origin recovery
+2,aryan
+3,immunity coronavirus
+4,die people coronavirus
+5,model covid animal 19
+6,testing rapid coronavirus test
+7,serological coronavirus test
+8,coronavirus reporting
+9,coronavirus canada
+10,social coronavirus distancing impact
+11,rationing coronavirus hospital
+12,quarantine coronavirus
+13,coronavirus spread
+14,spreader super coronavirus
+15,body coronavirus outside
+16,surface long coronavirus survive
+17,clinical trial coronavirus
+18,mask coronavirus prevent
+19,alcohol coronavirus kill sanitizer
+20,ace inhibitor coronavirus
+21,coronavirus mortality
+22,heart coronavirus impact
+23,coronavirus hypertension
+24,coronavirus diabetes
+25,coronavirus biomarkers
+26,symptom coronavirus early
+27,asymptomatic coronavirus
+28,hydroxychloroquine coronavirus
+29,repurposing coronavirus drug
+30,remdesivir coronavirus
+31,difference flu coronavirus
+32,subtypes coronavirus
+33,candidate coronavirus vaccine
+34,recovery coronavirus
+35,coronavirus public datasets
