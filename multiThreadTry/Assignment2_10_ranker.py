@@ -4,9 +4,11 @@ import pandas as pd
 from collections import Counter
 from tqdm import tqdm
 import time
-import ipdb
+import threading
+# import ipdb
 np.seterr(divide='ignore', invalid='ignore')
 
+general_lock = threading.Lock()
 
 def compute_tf_idf(word_list, op_type, V, N, df):
   """
@@ -125,7 +127,12 @@ def get_query_postings(queries, mapper):
   
   return query_vector
 
-
+def thread_target(word_list, op_type, V, N, df, query_vector, doc_id, scores):
+    doc_vector = compute_tf_idf(word_list, op_type, V, N, df)
+    value = np.dot(query_vector, doc_vector)
+    general_lock.acquire()
+    scores.append((doc_id, value))
+    general_lock.release()
 def get_ranks(new_idx, query_vector, V, method, output_file, df):
   """Returns a dict containing the query id vs the docs
 
@@ -138,30 +145,46 @@ def get_ranks(new_idx, query_vector, V, method, output_file, df):
   doc_method, query_method = method.split('.')
   start_time = time.time()
   with open(output_file, "w") as f:
-    for query_id, query_token_list in tqdm(query_vector.items()):
-      scores = []
-      f.write(str(query_id) + ",")
-      query_vector = compute_tf_idf(query_token_list, query_method, V, len(new_idx.keys()), df)
+    pass
+  for query_id, query_token_list in tqdm(query_vector.items()):
+    scores = []
+    output = [str(query_id)]
+    query_vector = compute_tf_idf(query_token_list, query_method, V, len(new_idx.keys()), df)
+    # ipdb.set_trace()
+    
+    cnt=0
+    print(f"Query id = {query_id}")
+    threads = []
+    lenValue = len(new_idx.keys())
+    for doc_id, doc_token_list in new_idx.items():
+      cnt+=1
+      if cnt%1000==0:
+        for t in threads:
+          t.join()
+        threads = []
+        print(f"processing doc query_id = {query_id}, doc_token_list = {cnt}, time = {time.time()-start_time} sec")
+      if cnt%50 == 0:
+        for t in threads:
+          t.join()
+        threads = []
       # ipdb.set_trace()
-      
-      cnt=0
-      print(f"Query id = {query_id}")
-      for doc_id, doc_token_list in new_idx.items():
-        cnt+=1
-        if cnt%1000==0:
-          print(f"processing doc query_id = {query_id}, doc_token_list = {cnt}, time = {time.time()-start_time} sec")
-        # ipdb.set_trace()
-        doc_vector = compute_tf_idf(doc_token_list, doc_method, V, len(new_idx.keys()), df)
-        # ipdb.set_trace()
-        scores.append((doc_id, np.dot(query_vector, doc_vector)))
-        
-      scores.sort(key=lambda x: x[1], reverse=True) 
-      # ipdb.set_trace()
-      scores = scores[:50]
-      output = []
-      for score in scores:
-        output.append(str(score[0]))
-        # f.write(str(score[0]) + ",")
+      # doc_vector = compute_tf_idf(doc_token_list, doc_method, V, len(new_idx.keys()), df)
+      # # ipdb.set_trace()
+      # scores.append((doc_id, np.dot(query_vector, doc_vector)))
+      t = threading.Thread(target=thread_target, args=(doc_token_list, doc_method, V, lenValue, df, query_vector, doc_id, scores))
+      t.start()
+      threads.append(t)
+
+    for t in threads:
+      t.join()
+    scores.sort(key=lambda x: x[1], reverse=True) 
+    # ipdb.set_trace()
+    scores = scores[:50]
+    
+    for score in scores:
+      output.append(str(score[0]))
+      # f.write(str(score[0]) + ",")
+    with open(output_file, "a") as f:  
       f.write(",".join(output))
       f.write("\n")
 
@@ -173,8 +196,8 @@ if __name__ == "__main__":
   inv_idx_file = "model_queries_10.bin"
   query_file = "./Data/queries_10.txt"
   configs = {
-    "lnc.ltc": "Assignment2_10_ranked_list_A.csv",
-    "lnc.lpc": "Assignment2_10_ranked_list_B.csv",
+    # "lnc.ltc": "Assignment2_10_ranked_list_A.csv",
+    # "lnc.lpc": "Assignment2_10_ranked_list_B.csv",
     "anc.apc": "Assignment2_10_ranked_list_C.csv"
   }
   
