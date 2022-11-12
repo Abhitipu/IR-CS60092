@@ -5,8 +5,47 @@ from collections import Counter
 from tqdm import tqdm
 import time
 import ipdb
-import threading
-general_lock = threading.Lock()
+# import threading
+# general_lock = threading.Lock()
+
+def custom_cosine_sim(tokensA, tokensB):
+  """
+  doc -- (t, tfidf) ...
+  query -- (t, tdidf) ...
+  """
+  # print(tokensA)
+  # print(tokensB)
+  cosine_sim = 0
+  for idA, tfidf in tokensA.items():
+    if idA in tokensB:
+      cosine_sim += tfidf * tokensB[idA]
+  
+  return cosine_sim
+
+def custom_add(tokensA, tokensB):
+  """
+  doc -- (t, tfidf) ...
+  query -- (t, tdidf) ...
+  """
+  # print(tokensA)
+  # print(tokensB)
+  term_ids = set()
+
+  for term_id in tokensA:
+    term_ids.add(term_id)
+
+  for term_id in tokensB:
+    term_ids.add(term_id)
+
+ 
+  sumToken = dict()
+  for term_id in term_ids:
+    sumToken[term_id] = 0
+    if term_id in tokensA:
+      sumToken[term_id] += tokensA[term_id]
+    if term_id in tokensB:
+      sumToken[term_id] += tokensB[term_id]
+  return sumToken
 
 def compute_average_precision(ground_truth, rank_list, k):
   """
@@ -158,13 +197,12 @@ def compute_tf_idf(word_list, op_type, V, N, df):
       V (int): size of the vocab
       N (int): total no of docs
   Returns:
-      final_vector : the vector representing the term
+      final_dict : the vector representing the (t, f) pairs
   """
-  # print("computing tf id")
   
   op_type = op_type.lower()
-  final_vector = np.zeros(V)
-  idf_vector = np.ones(V)
+  
+  final_dict = dict()
   
   # First operation
   if op_type[0] not in "lan":
@@ -172,40 +210,53 @@ def compute_tf_idf(word_list, op_type, V, N, df):
   
   else:
     for idx, freq in word_list:
-      final_vector[idx] = freq
+      final_dict[idx] = freq
           
     if op_type[0] == "l":
-      final_vector = np.log(1 + final_vector)
+      for dict_idx, dict_freq in word_list:
+        final_dict[dict_idx] = np.log(1 + dict_freq)
       
     elif op_type[0] == "a":
-      final_vector = 0.5 + 0.5 * final_vector / np.max(final_vector)
+      max_val = np.max([freq for token, freq in word_list])
+      for dict_idx, dict_freq in word_list:
+        final_dict[dict_idx] = 0.5 + 0.5 * dict_freq / (max_val + 1e-20)
+
 
   # Second operation
   if op_type[1] not in "ntp":
     return Exception("Invalid operation")
   
   else:
-    # final_vector = final_vector + 1e-20
-    # ipdb.set_trace()
+    idf_dict = {idx:1 for idx in final_dict}
     
     if op_type[1] == "t":
-      idf_vector = np.log(N / df)
+      for idx, idf in idf_dict.items():
+        idf_dict[idx] = np.log(N / df[idx])
       
     elif op_type[1] == "p":
-      idf_vector = np.log(N / df - 1)
-      idf_vector[idf_vector < 0] = 0
-  # ipdb.set_trace()
-  final_vector = final_vector * idf_vector
-  # ipdb.set_trace()
+      for idx, idf in idf_dict.items():
+        idf_dict[idx] = np.log(N / df[idx] - 1)
+        if idf_dict[idx] < 0:
+          idf_dict[idx] = 0.0
+        
+  squares = 0
+  for key, val in final_dict.items():
+    final_dict[key] = val * idf_dict[key]
+    squares += final_dict[key]**2
+  squares = np.sqrt(squares)
   
   # Third operation
   if op_type[2] not in "cn":
     return Exception("Invalid operation")
   
-  return final_vector / (np.linalg.norm(final_vector) + 1e-20) if op_type[2] == "c" else final_vector
+  if op_type[2] == "c":
+    for idx, val in final_dict.items():
+      final_dict[idx] = val / (squares + 1e-20)
+  # ipdb.set_trace()    
+  return final_dict
 
 # (word_list, op_type, V, N, df):
-def relevance_feedback(ground_truth, ranked_list, new_idx, V, method, df, k):
+def relevance_feedback(ground_truth, ranked_list, doc_tf_idf, k):
   """
     Returns an array of tuples where each entry is (positive_feedback, negative_feedback)
     positive feedback = (1 / |D_R|) * sum(d_R)
@@ -213,17 +264,18 @@ def relevance_feedback(ground_truth, ranked_list, new_idx, V, method, df, k):
     One entry for each query
   """
   # judgments == 2 are relevant
-  doc_method, query_method = method.split('.')
   
   query_id = 1
 
   feedback = []
   
   for row in ranked_list[1:]:
-    pos_feedback = np.zeros(V)
+    # pos_feedback = np.zeros(V)
+    pos_feedback = dict()
     pos_vector_count = 0
     
-    neg_feedback = np.zeros(V)
+    # neg_feedback = np.zeros(V)
+    neg_feedback = dict()
     neg_vector_count = 0
     # prec = [] #prec@k
     # relevant_cords = 0
@@ -232,29 +284,35 @@ def relevance_feedback(ground_truth, ranked_list, new_idx, V, method, df, k):
     # ipdb.set_trace()
     for i in range(loop_k):
       cord_id = row[i]
-      doc_vector = compute_tf_idf(new_idx[cord_id], doc_method, V, len(new_idx.keys()), df)
+      doc_vector = doc_tf_idf[cord_id]
       if cord_id in ground_truth[query_id] and (ground_truth[query_id][cord_id][0]==2):
         # relevant doc
-        pos_feedback += doc_vector
+        # pos_feedback += doc_vector #
+        pos_feedback = custom_add(pos_feedback, doc_vector)
         pos_vector_count+=1
       else:
         # irrelevant doc
-        neg_feedback += doc_vector
+        # neg_feedback += doc_vector #
+        neg_feedback = custom_add(neg_feedback, doc_vector)
         neg_vector_count+=1
     # print(query_id, len(prec), k)
     # 
     if(pos_vector_count != 0):
-      pos_feedback/=pos_vector_count
+      for idx, v in pos_feedback.items():
+        pos_feedback[idx] /= pos_vector_count
+      # pos_feedback/=pos_vector_count #
     
     if(neg_vector_count != 0):
-      neg_vector_count/=neg_vector_count
+      for idx, v in neg_feedback.items():
+        neg_feedback[idx] /= neg_vector_count
+      # neg_vector_count/=neg_vector_count #
     
     query_id +=1
     feedback.append((pos_feedback, neg_feedback))
     
   return feedback
 
-def pseudo_relevance_feedback(ground_truth, ranked_list, new_idx, V, method, df, k):
+def pseudo_relevance_feedback(ground_truth, ranked_list, doc_tf_idf, k):
   """
     Returns an array of tuples where each entry is (positive_feedback, negative_feedback)
     Positive feedback = (1 / |D_R|) * sum(d_R)
@@ -262,17 +320,16 @@ def pseudo_relevance_feedback(ground_truth, ranked_list, new_idx, V, method, df,
     One entry for each query
   """
   # judgments == 2 are relevant
-  doc_method, query_method = method.split('.')
   
   query_id = 1
 
   feedback = []
   
   for row in ranked_list[1:]:
-    pos_feedback = np.zeros(V)
+    pos_feedback = dict()
     pos_vector_count = 0
     
-    neg_feedback = np.zeros(V)
+    neg_feedback = dict()
     neg_vector_count = 0
     # prec = [] #prec@k
     # relevant_cords = 0
@@ -281,56 +338,74 @@ def pseudo_relevance_feedback(ground_truth, ranked_list, new_idx, V, method, df,
     # ipdb.set_trace()
     for i in range(loop_k):
       cord_id = row[i]
-      doc_vector = compute_tf_idf(new_idx[cord_id], doc_method, V, len(new_idx.keys()), df)
+      doc_vector = doc_tf_idf[cord_id]
       
-      pos_feedback += doc_vector
+      
+      pos_feedback = custom_add(pos_feedback, doc_vector)
       pos_vector_count+=1
       
     # print(query_id, len(prec), k)
     # 
     if(pos_vector_count != 0):
-      pos_feedback/=pos_vector_count
+      for idx, v in pos_feedback.items():
+        pos_feedback[idx] /= pos_vector_count
 
     query_id +=1
     feedback.append((pos_feedback, neg_feedback))
     
   return feedback
 def modify_query(query_vector, feedback, config):
+  # query_vector = {k: v for k,v in query_vector_list}
+  
   alpha = config[0]
   beta = config[1]
   gamma = config[2]
   pos_feedback = feedback[0]
   neg_feedback = feedback[1]
-  modified_query = alpha * query_vector + beta*pos_feedback - gamma*neg_feedback
+  term_ids = set()
+
+  for term_id in query_vector:
+    term_ids.add(term_id)
+
+  for term_id in pos_feedback:
+    term_ids.add(term_id)
+
+  for term_id in neg_feedback:
+    term_ids.add(term_id)
+
+  modified_query = dict()
+  for term_id in term_ids:
+    modified_query[term_id] = 0
+    if term_id in query_vector:
+      modified_query[term_id] += alpha * query_vector[term_id]
+    if term_id in pos_feedback:
+      modified_query[term_id] += beta * pos_feedback[term_id]
+    if term_id in neg_feedback:
+      modified_query[term_id] -= gamma * neg_feedback[term_id]
   return modified_query
 
-def thread_target(word_list, op_type, V, N, df, query_vectors, doc_id, scores):
-    doc_vector = compute_tf_idf(word_list, op_type, V, N, df)
-    # 6
-    values = []
-    for q_vec in query_vectors:
-      values.append(np.dot(q_vec, doc_vector))
-    # value = np.dot(query_vector, doc_vector)
-    # temp_scores = []
-    # for val in values:
-    #   temp_scores.append((doc_id, val))
+# def thread_target(word_list, op_type, V, N, df, query_vectors, doc_id, scores):
+#     doc_vector = compute_tf_idf(word_list, op_type, V, N, df)
+#     # 6
+#     values = []
+#     for q_vec in query_vectors:
+#       values.append(np.dot(q_vec, doc_vector))
+#     # value = np.dot(query_vector, doc_vector)
+#     # temp_scores = []
+#     # for val in values:
+#     #   temp_scores.append((doc_id, val))
 
-    idx = 0
-    # (6, 37000) -- (6, 50)
-    general_lock.acquire()
-    for val in values:
-      scores[idx].append((doc_id, val))
-      idx+=1
-    # scores.append(temp_scores) # temp_scores will be 6 different score
-    general_lock.release()
+#     idx = 0
+#     # (6, 37000) -- (6, 50)
+#     general_lock.acquire()
+#     for val in values:
+#       scores[idx].append((doc_id, val))
+#       idx+=1
+#     # scores.append(temp_scores) # temp_scores will be 6 different score
+#     general_lock.release()
 
-def get_ranks(new_idx, query_vectors, V, method, output_file, df):
-  # ipdb> len(modified_queries)
-  # 35
-  # ipdb> len(modified_queries[0])
-  # 6
-  # ipdb> len(modified_queries[0][0])
-  # 146080 
+
+def get_ranks(query_tf_idf, doc_tf_idf, output_file):
   """Returns a dict containing the query id vs the docs
 
   Args:
@@ -339,72 +414,28 @@ def get_ranks(new_idx, query_vectors, V, method, output_file, df):
       V (int): vocab size
   """
   
-  doc_method, query_method = method.split('.')
-  start_time = time.time()
-  ranked_lists = [
-    [] for i in range(len(query_vectors[0]))
-  ]
-  for i in range(len(query_vectors[0])):
-    with open(output_file+str(i)+".csv", "w") as f:
-      pass
-    
-  query_id = 1
-  for query_vector in tqdm(query_vectors):
-    scores = [[] for i in range(len(query_vector))]
-    
-    # 6 * 50000
-    outputs = [[str(query_id)] for i in range(len(query_vector))]
-
-    # ipdb.set_trace()
-    
-    cnt=0
-    print(f"Query id = {query_id}")
-    threads = []
-    lenValue = len(new_idx.keys())
-    for doc_id, doc_token_list in new_idx.items():
-      cnt+=1
-      if cnt%1000==0:
-        # for t in threads:
-        #   t.join()
-        # threads = []
-        print(f"processing doc query_id = {query_id}, doc_token_list = {cnt}, time = {time.time()-start_time} sec")
-      if cnt%50 == 0:
-        for t in threads:
-          t.join()
-        threads = []
+  ranked_list = []
+  with open(output_file, "w") as f:
+    for query_id, query_vector in tqdm(query_tf_idf.items()):
+      scores = []
+      f.write(str(query_id) + ",")
+      
+      cnt=0
+      for doc_id, doc_vector in doc_tf_idf.items():
+        cnt+=1
+        scores.append((doc_id, custom_cosine_sim(query_vector, doc_vector)))
+        
+      scores.sort(key=lambda x: x[1], reverse=True) 
       # ipdb.set_trace()
-      # doc_vector = compute_tf_idf(doc_token_list, doc_method, V, len(new_idx.keys()), df)
-      # # ipdb.set_trace()
-      # scores.append((doc_id, np.dot(query_vector, doc_vector)))
-      t = threading.Thread(target=thread_target, args=(doc_token_list, doc_method, V, lenValue, df, query_vector, doc_id, scores))
-      t.start()
-      threads.append(t)
-
-    for t in threads:
-      t.join()
-    
-    for i in range(len(scores)):
-      scores[i].sort(key=lambda x: x[1], reverse=True)
-      scores[i] = scores[i][:50]
-      ranked_lists[i].append(scores[i])
-      for score in scores[i]:
-        outputs[i].append(str(score[0]))
-      with open(output_file+str(i)+".csv", "a") as f:  
-        f.write(",".join(outputs[i]))
-        f.write("\n")
-    query_id+=1
-    # ipdb.set_trace()
-  return ranked_lists
-    # scores.sort(key=lambda x: x[1], reverse=True) 
-    # ipdb.set_trace()
-    # scores = scores[:50]
-    
-    # for score in scores:
-    #   output.append(str(score[0]))
-    #   # f.write(str(score[0]) + ",")
-    # with open(output_file, "a") as f:  
-    #   f.write(",".join(output))
-    #   f.write("\n")
+      scores = scores[:50]
+      output = []
+      for score in scores:
+        output.append(str(score[0]))
+        # f.write(str(score[0]) + ",")
+      f.write(",".join(output))
+      f.write("\n")
+      ranked_list.append(output)
+  return ranked_list  
       
 if __name__ == "__main__":
   #filenames
@@ -428,6 +459,7 @@ if __name__ == "__main__":
       
   #index
   method = "lnc.ltc"
+  doc_method, query_method = method.split('.')
 
   with open(inv_idx_file, 'rb') as f:
     inv_idx = pickle.load(f)
@@ -438,8 +470,14 @@ if __name__ == "__main__":
   queries = pd.read_csv(query_file)
   query_vectors = get_query_postings(queries, mapper)
 
-  feedback = relevance_feedback(ground_truth, ranked_list, new_idx, len(mapper), method, df, 20)# 2 vector
-  pseudo_feedback = pseudo_relevance_feedback(ground_truth, ranked_list, new_idx, len(mapper), method, df, 10)
+  
+  V = len(mapper)
+  N = len(new_idx)
+  
+  doc_tf_idf = {doc_id: compute_tf_idf(doc_token_list, doc_method, V, N, df) for doc_id, doc_token_list in new_idx.items()}
+  feedback = relevance_feedback(ground_truth, ranked_list, doc_tf_idf, 20)# 2 vector
+  pseudo_feedback = pseudo_relevance_feedback(ground_truth, ranked_list, doc_tf_idf, 10)
+  query_tf_idf = {query_id: compute_tf_idf(query_token_list, query_method, V, N, df) for query_id, query_token_list in query_vectors.items()}  
 
   # ipdb.set_trace()
 
@@ -451,56 +489,67 @@ if __name__ == "__main__":
   ]
 
   
-  vocab_size = len(mapper)
-  total_docs = len(new_idx.keys())
-
-  modified_queries = []
-  
   # [1, 1, 0.5], relevance
   # [1, 1, 0.5], psuedo
   # [0.5, 0.5, 0.5], relevance
   # [0.5, 0.5, 0.5], psuedo
   # [1, 0.5, 0] relevance
   # [1, 0.5, 0] psuedo
-  
-  for query_id, query_token_list in tqdm(query_vectors.items()):
-      query_vector = compute_tf_idf(query_token_list, "ltc", vocab_size, total_docs, df)
-      modified_query = []
-      for config in rf_config:
-        modified_query.append(modify_query(query_vector, feedback[query_id-1], config))
-        modified_query.append(modify_query(query_vector, pseudo_feedback[query_id-1], config))
-      modified_queries.append(modified_query)
+  # for query_id, query_vector in tqdm(query_vectors.items()):
+  #     modified_query = []
+  #     for config in rf_config:
+  #       modified_query.append(modify_query(query_vector, feedback[query_id-1], config))
+  #       modified_query.append(modify_query(query_vector, pseudo_feedback[query_id-1], config))
+  #     modified_queries.append(modified_query)
+  ranked_lists= []
+  for idx, config in enumerate(rf_config):
+    # one of six
+    modified_query_tf_idf = {query_id: modify_query(query_tf_idf[query_id],feedback[query_id-1], config ) for query_id, query_token_list in query_vectors.items()}  
+    ranked_list = get_ranks(modified_query_tf_idf, doc_tf_idf, f"NewRanks_{idx}_relevance.csv")
+    
+    ranked_lists.append([["dummy"]] + ranked_list) # for fixing the offset
+    # ipdb.set_trace()
+    # break
+    modified_query_tf_idf = {query_id: modify_query(query_tf_idf[query_id],pseudo_feedback[query_id-1], config ) for query_id, query_token_list in query_vectors.items()}  
+    ranked_list = get_ranks(modified_query_tf_idf, doc_tf_idf, f"NewRanks_{idx}_ps_relevance.csv")
+    ranked_lists.append(ranked_list)
+    
 
-  print(modified_query)
+  # print(modified_query)
   # ipdb.set_trace()    
-  ranked_lists = get_ranks(new_idx, modified_queries, vocab_size, method, "NewRanks_", df)
- 
   ctr = 0 
+  with open(pseudo_relevance_file, "w") as f:
+    f.write("alpha, beta, gamma, mAP@20, NDCG20 \n")
+    pass
+
+  with open(relevance_file, "w") as f:
+    f.write("alpha, beta, gamma, mAP@20, NDCG20 \n")
+    pass
+
   for ranked_list in ranked_lists:
     fname = ""
-    mAP20 = compute_average_precision(ground_truth, ranked_list, 20) ; 
-    nDCG = ndcg(ground_truth, ranked_list, 20)
-    
+    mAP20 = np.mean(compute_average_precision(ground_truth, ranked_list, 20))
+    nDCG = np.mean(ndcg(ground_truth, ranked_list, 20))
+    # ipdb.set_trace()
+    # print(mAP20, nDCG)
     k = ctr
     if ctr%2 == 1:
       k = k - 1
+    k = k >> 1
     
-    if ctr%2 == 1:
+    if ctr%2 == 0:
       fname = relevance_file
     else:
       fname = pseudo_relevance_file 
     
     with open(fname, "a") as f:
-      f.write(str(config[k%2][0])+", ")
-      f.write(str(config[k%2][1])+", ")
-      f.write(str(config[k%2][2])+", ")
+      # ipdb.set_trace()
       
-      for s in mAP20:
-        f.write(str(s)+", ")
-    
-      for s in nDCG:
-        f.write(str(s)+", ")
-
-      f.write("\n") 
-       
+      # for a, b in zip(mAP20, nDCG):
+      f.write(str(rf_config[k][0])+", ")
+      f.write(str(rf_config[k][1])+", ")
+      f.write(str(rf_config[k][2])+", ")
+      f.write(str(mAP20)+", ")
+      f.write(str(nDCG)+"\n") 
+          
     ctr = ctr + 1 ; 

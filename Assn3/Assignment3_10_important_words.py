@@ -119,7 +119,7 @@ def compute_tf_idf(word_list, op_type, V, N, df):
 if __name__ == "__main__":
     inv_idx_file = "model_queries_10.bin"
     query_file = "./Data/queries_10.txt"
-    ranked_file = "./Assignment2_10_ranked_list_A.csv"
+    ranked_file = "./NewRanks_0_ps_relevance.csv"
     output_file = "./Assignment3_10_important_words.csv"
     
     with open(inv_idx_file, 'rb') as f:
@@ -142,6 +142,6 @@ if __name__ == "__main__":
         for index, rows in ranked_list_df.iterrows():
             mean_vec = np.zeros(V)
             for idx, cord_id in enumerate(list(rows[1:n_docs+1])):
-                mean_vec = mean_vec + 1 / (idx + 1) * (compute_tf_idf(new_idx[cord_id], "lnc", V, N) - mean_vec)
+                mean_vec = mean_vec + 1 / (idx + 1) * (compute_tf_idf(new_idx[cord_id], "lnc", V, N,df) - mean_vec)
             sorted_indices = np.argsort(mean_vec)[::-1]
             f.write(f"{rows[0]}:{','.join([inv_mapper[idx] for idx in sorted_indices[:n_words]])}\n")        
