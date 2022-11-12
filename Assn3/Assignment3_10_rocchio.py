@@ -139,6 +139,12 @@ def compute_tf_idf(word_list, op_type, V, N, df):
 
 # (word_list, op_type, V, N, df):
 def relevance_feedback(ground_truth, ranked_list, new_idx, V, method, df, k):
+  """
+    Returns an array of tuples where each entry is (positive_feedback, negative_feedback)
+    positive feedback = (1 / |D_R|) * sum(d_R)
+    negative feedback = (1 / |D_NR|) * sum(d_NR)
+    One entry for each query
+  """
   # judgments == 2 are relevant
   doc_method, query_method = method.split('.')
   
@@ -162,33 +168,32 @@ def relevance_feedback(ground_truth, ranked_list, new_idx, V, method, df, k):
       doc_vector = compute_tf_idf(new_idx[cord_id], doc_method, V, len(new_idx.keys()), df)
       if cord_id in ground_truth[query_id] and (ground_truth[query_id][cord_id][0]==2):
         # relevant doc
-        # get tf idf vector of the doc, add vector to pos_feedback, increment pos vector count 
-        # relevant_cords += 1
-        # if(pos_feedback is None):
-        #   pos_feedback = doc_vector
-        # else:
         pos_feedback += doc_vector
         pos_vector_count+=1
       else:
         # irrelevant doc
-        # get tf idf vector of the doc, add vector to neg_feedback, increment neg vector count 
-        # if(neg_feedback is None):
-        #   neg_feedback = doc_vector
-        # else:
         neg_feedback += doc_vector
         neg_vector_count+=1
     # print(query_id, len(prec), k)
     # 
     if(pos_vector_count != 0):
       pos_feedback/=pos_vector_count
+    
     if(neg_vector_count != 0):
       neg_vector_count/=neg_vector_count
+    
     query_id +=1
     feedback.append((pos_feedback, neg_feedback))
     
   return feedback
 
 def pseudo_relevance_feedback(ground_truth, ranked_list, new_idx, V, method, df, k):
+  """
+    Returns an array of tuples where each entry is (positive_feedback, negative_feedback)
+    Positive feedback = (1 / |D_R|) * sum(d_R)
+    Negative feedback = NULL
+    One entry for each query
+  """
   # judgments == 2 are relevant
   doc_method, query_method = method.split('.')
   
@@ -234,6 +239,7 @@ def modify_query(query_vector, feedback, config):
 
 def thread_target(word_list, op_type, V, N, df, query_vectors, doc_id, scores):
     doc_vector = compute_tf_idf(word_list, op_type, V, N, df)
+    # 6
     values = []
     for q_vec in query_vectors:
       values.append(np.dot(q_vec, doc_vector))
@@ -243,6 +249,7 @@ def thread_target(word_list, op_type, V, N, df, query_vectors, doc_id, scores):
     #   temp_scores.append((doc_id, val))
 
     idx = 0
+    # (6, 37000) -- (6, 50)
     general_lock.acquire()
     for val in values:
       scores[idx].append((doc_id, val))
@@ -275,7 +282,6 @@ def get_ranks(new_idx, query_vectors, V, method, output_file, df):
   for query_vector in tqdm(query_vectors):
     scores = [[] for i in range(len(query_vector))]
     
-    
     # 6 * 50000
     outputs = [[str(query_id)] for i in range(len(query_vector))]
 
@@ -288,9 +294,9 @@ def get_ranks(new_idx, query_vectors, V, method, output_file, df):
     for doc_id, doc_token_list in new_idx.items():
       cnt+=1
       if cnt%1000==0:
-        for t in threads:
-          t.join()
-        threads = []
+        # for t in threads:
+        #   t.join()
+        # threads = []
         print(f"processing doc query_id = {query_id}, doc_token_list = {cnt}, time = {time.time()-start_time} sec")
       if cnt%50 == 0:
         for t in threads:
@@ -362,6 +368,7 @@ if __name__ == "__main__":
 
   # ipdb.set_trace()
 
+  # alpha, beta, gamma
   rf_config = [
     [1, 1, 0.5], 
     [0.5, 0.5, 0.5], 
@@ -373,6 +380,7 @@ if __name__ == "__main__":
   total_docs = len(new_idx.keys())
 
   modified_queries = []
+  
   
   for query_id, query_token_list in tqdm(query_vectors.items()):
       query_vector = compute_tf_idf(query_token_list, "ltc", vocab_size, total_docs, df)

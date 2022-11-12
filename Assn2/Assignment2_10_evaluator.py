@@ -18,7 +18,11 @@ def get_rel_dict(ground_truth_df):
         
   return ground_truth
 
-def mean_average_precision(ground_truth, rank_list, k):
+def compute_average_precision(ground_truth, rank_list, k):
+  """
+    Ground truth : query_id -> cord_id -> (judgement, iteration)
+    rank list: query_id -> ranked list of cord_id
+  """
   # non zero judgments are relevant
   query_id = 1
   average_precision = []
@@ -106,16 +110,16 @@ if __name__ == "__main__":
   # list of dictionaries, each mapping cord_id -> relevance score, index in list = query_id
   ground_truth = get_rel_dict(ground_truth_df)
   
-  MAP10 = mean_average_precision(ground_truth, ranked_list, 20)
-  MAP20 = mean_average_precision(ground_truth, ranked_list, 20)
+  AP10 = compute_average_precision(ground_truth, ranked_list, 10)
+  AP20 = compute_average_precision(ground_truth, ranked_list, 20)
 
   NDCG10 = ndcg(ground_truth, ranked_list, 10)
   NDCG20 = ndcg(ground_truth, ranked_list, 20)
 
   data_dict = {
     'query_id' : [qid for qid in range(1, 36)] + ["Avg"],
-    'MAP@10' : MAP10 + [np.mean(MAP10)],
-    'MAP@20' : MAP20 + [np.mean(MAP20)],
+    'MAP@10' : AP10 + [np.mean(AP10)],
+    'MAP@20' : AP20 + [np.mean(AP20)],
     'NDCG@10' : NDCG10 + [np.mean(NDCG10)],
     'NDCG@20' : NDCG20 + [np.mean(NDCG20)],
     
