@@ -135,11 +135,13 @@ if __name__ == "__main__":
     V = len(inv_idx)
     N = len(new_idx)
     
+    n_docs = 10
+    n_words = 5
     inv_mapper = {v: k for k, v in mapper.items()}
     with open(output_file, 'w') as f:
         for index, rows in ranked_list_df.iterrows():
             mean_vec = np.zeros(V)
-            for idx, cord_id in enumerate(list(rows[1:])):
+            for idx, cord_id in enumerate(list(rows[1:n_docs+1])):
                 mean_vec = mean_vec + 1 / (idx + 1) * (compute_tf_idf(new_idx[cord_id], "lnc", V, N) - mean_vec)
             sorted_indices = np.argsort(mean_vec)[::-1]
-            f.write(f"{rows[0]}:{','.join([inv_mapper[idx] for idx in sorted_indices[:5]])}\n")        
+            f.write(f"{rows[0]}:{','.join([inv_mapper[idx] for idx in sorted_indices[:n_words]])}\n")        
