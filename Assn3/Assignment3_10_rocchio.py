@@ -8,6 +8,73 @@ import ipdb
 import threading
 general_lock = threading.Lock()
 
+def compute_average_precision(ground_truth, rank_list, k):
+  """
+    Ground truth : query_id -> cord_id -> (judgement, iteration)
+    rank list: query_id -> ranked list of cord_id
+  """
+  # non zero judgments are relevant
+  query_id = 1
+  average_precision = []
+  for row in rank_list[1:]:
+    prec = [] #prec@k
+    total_cords = 0
+    relevant_cords = 0
+    loop_k = min(k, len(row))
+    for i in range(loop_k):
+      total_cords += 1
+      cord_id = row[i]
+      if cord_id in ground_truth[query_id]:
+        if ground_truth[query_id][cord_id][0]!=0:
+          relevant_cords += 1
+          prec.append(relevant_cords/(total_cords))
+    if(len(prec) == 0):
+      average_precision.append(0)
+    else:
+      average_precision.append(np.mean(prec))
+    # ipdb.set_trace()
+    query_id+=1
+  return average_precision  #note the offset
+
+def ndcg(ground_truth, rank_list, k):
+  query_id = 1
+  ndcg = []
+  for row in rank_list[1:]:
+    # dcg = []
+    cur_dcg = 0
+    position = 0
+    loop_k = min(k, len(row))
+    values = []
+    for i in range(loop_k):
+      cord_id = row[i]
+      position += 1
+      val = 0
+      discount = 1
+      if position > 1:
+        discount = np.log2(position)
+      if cord_id in ground_truth[query_id]:
+        val = ground_truth[query_id][cord_id][0]
+      values.append(val)
+      cur_dcg+= val/discount
+
+    ideal_ar = []
+    for key, val in ground_truth[query_id].items():
+      ideal_ar.append(val[0])
+
+    ideal_ar.sort(reverse = True)
+    loop_k = min(k, len(ideal_ar))
+    i_dcg=0
+    for i in range(loop_k):
+      discount=1
+      if i>0:
+        discount = np.log2(i+1)
+      i_dcg+=ideal_ar[i]/discount
+    # ipdb.set_trace()
+    ndcg.append(cur_dcg/i_dcg)
+    query_id+=1
+
+  return ndcg
+
 def transpose_inv_idx(inv_idx):
   """
   Takes a transpose of the inverted index
@@ -274,6 +341,9 @@ def get_ranks(new_idx, query_vectors, V, method, output_file, df):
   
   doc_method, query_method = method.split('.')
   start_time = time.time()
+  ranked_lists = [
+    [] for i in range(len(query_vectors[0]))
+  ]
   for i in range(len(query_vectors[0])):
     with open(output_file+str(i)+".csv", "w") as f:
       pass
@@ -316,12 +386,15 @@ def get_ranks(new_idx, query_vectors, V, method, output_file, df):
     for i in range(len(scores)):
       scores[i].sort(key=lambda x: x[1], reverse=True)
       scores[i] = scores[i][:50]
+      ranked_lists[i].append(scores[i])
       for score in scores[i]:
         outputs[i].append(str(score[0]))
       with open(output_file+str(i)+".csv", "a") as f:  
         f.write(",".join(outputs[i]))
         f.write("\n")
     query_id+=1
+    # ipdb.set_trace()
+  return ranked_lists
     # scores.sort(key=lambda x: x[1], reverse=True) 
     # ipdb.set_trace()
     # scores = scores[:50]
@@ -339,6 +412,8 @@ if __name__ == "__main__":
   query_file = "./Data/queries_10.txt"
   ground_truth_file = "./Data/qrels.csv"
   ranked_file = "./Assignment2_10_ranked_list_A.csv"
+  relevance_file = "./Assignment3_10_rocchio_RF_metrics.csv"
+  pseudo_relevance_file = "./Assignment3_10_rocchio_PsRF_metrics.csv"
 
   #ground truth list of dict
   ground_truth_df = pd.read_csv(ground_truth_file)
@@ -381,6 +456,12 @@ if __name__ == "__main__":
 
   modified_queries = []
   
+  # [1, 1, 0.5], relevance
+  # [1, 1, 0.5], psuedo
+  # [0.5, 0.5, 0.5], relevance
+  # [0.5, 0.5, 0.5], psuedo
+  # [1, 0.5, 0] relevance
+  # [1, 0.5, 0] psuedo
   
   for query_id, query_token_list in tqdm(query_vectors.items()):
       query_vector = compute_tf_idf(query_token_list, "ltc", vocab_size, total_docs, df)
@@ -392,5 +473,34 @@ if __name__ == "__main__":
 
   print(modified_query)
   # ipdb.set_trace()    
-  get_ranks(new_idx, modified_queries, vocab_size, method, "NewRanks_", df)
+  ranked_lists = get_ranks(new_idx, modified_queries, vocab_size, method, "NewRanks_", df)
+ 
+  ctr = 0 
+  for ranked_list in ranked_lists:
+    fname = ""
+    mAP20 = compute_average_precision(ground_truth, ranked_list, 20) ; 
+    nDCG = ndcg(ground_truth, ranked_list, 20)
     
+    k = ctr
+    if ctr%2 == 1:
+      k = k - 1
+    
+    if ctr%2 == 1:
+      fname = relevance_file
+    else:
+      fname = pseudo_relevance_file 
+    
+    with open(fname, "a") as f:
+      f.write(str(config[k%2][0])+", ")
+      f.write(str(config[k%2][1])+", ")
+      f.write(str(config[k%2][2])+", ")
+      
+      for s in mAP20:
+        f.write(str(s)+", ")
+    
+      for s in nDCG:
+        f.write(str(s)+", ")
+
+      f.write("\n") 
+       
+    ctr = ctr + 1 ; 

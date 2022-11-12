@@ -94,8 +94,9 @@ if __name__ == "__main__":
   
   ground_truth_file = sys.argv[1]
   ranked_file = sys.argv[2]
+  print(ranked_file)
   output_file = "./Assignment2_10_metrics_"+ranked_file[-5:]
-  # print(output_file)
+  print(output_file)
   # exit()
   ground_truth_df = pd.read_csv(ground_truth_file)
   ranked_list_df = pd.read_csv(ranked_file, header=None)
