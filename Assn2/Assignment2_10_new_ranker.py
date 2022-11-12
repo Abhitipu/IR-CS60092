@@ -33,7 +33,7 @@ def compute_tf_idf(word_list, op_type, V, N, df):
       V (int): size of the vocab
       N (int): total no of docs
   Returns:
-      final_vector : the vector representing the term
+      final_dict : the vector representing the (t, f) pairs
   """
   
   op_type = op_type.lower()
@@ -153,7 +153,7 @@ def get_query_postings(queries, mapper):
   return query_vector
 
 
-def get_ranks(new_idx, query_vector, V, method, output_file, df):
+def get_ranks(query_tf_idf, doc_tf_idf, output_file):
   """Returns a dict containing the query id vs the docs
 
   Args:
@@ -162,24 +162,18 @@ def get_ranks(new_idx, query_vector, V, method, output_file, df):
       V (int): vocab size
   """
   
-  doc_method, query_method = method.split('.')
   start_time = time.time()
   with open(output_file, "w") as f:
-    for query_id, query_token_list in tqdm(query_vector.items()):
+    for query_id, query_vector in tqdm(query_tf_idf.items()):
       scores = []
       f.write(str(query_id) + ",")
-      query_vector = compute_tf_idf(query_token_list, query_method, V, len(new_idx.keys()), df)
-      # ipdb.set_trace()
       
       cnt=0
       print(f"Query id = {query_id}")
-      for doc_id, doc_token_list in new_idx.items():
+      for doc_id, doc_vector in doc_tf_idf.items():
         cnt+=1
         if cnt%1000==0:
           print(f"processing doc query_id = {query_id}, doc_token_list = {cnt}, time = {time.time()-start_time} sec")
-        # ipdb.set_trace()
-        doc_vector = compute_tf_idf(doc_token_list, doc_method, V, len(new_idx.keys()), df)
-        # ipdb.set_trace()
         scores.append((doc_id, custom_cosine_sim(query_vector, doc_vector)))
         
       scores.sort(key=lambda x: x[1], reverse=True) 
@@ -206,14 +200,21 @@ if __name__ == "__main__":
   with open(inv_idx_file, 'rb') as f:
     inv_idx = pickle.load(f)
   
-  # Transpose inverted index for optimizing space
-  new_idx, mapper, df = transpose_inv_idx(inv_idx)  
+  # Get the transpose of doc vectors
+  new_idx, mapper, df = transpose_inv_idx(inv_idx)
   
-  # Get queries to tokens mapping
+  # Get query id to token mapping
   queries = pd.read_csv(query_file)
   query_vector = get_query_postings(queries, mapper)
-  # ipdb.set_trace()
+  
+  V = len(mapper)
+  N = len(new_idx)
   
   # Get the ranks and save for different configs
   for config, output_file in configs.items():
-    get_ranks(new_idx, query_vector, len(mapper), config, output_file, df)
+    doc_method, query_method = config.split('.')	
+    
+    doc_tf_idf = {doc_id: compute_tf_idf(doc_token_list, doc_method, V, N, df) for doc_id, doc_token_list in new_idx.items()}
+    query_tf_idf = {query_id: compute_tf_idf(query_token_list, query_method, V, N, df) for query_id, query_token_list in query_vector.items()}  
+    
+    get_ranks(query_tf_idf, doc_tf_idf, output_file)
