@@ -512,7 +512,7 @@ if __name__ == "__main__":
     # break
     modified_query_tf_idf = {query_id: modify_query(query_tf_idf[query_id],pseudo_feedback[query_id-1], config ) for query_id, query_token_list in query_vectors.items()}  
     ranked_list = get_ranks(modified_query_tf_idf, doc_tf_idf, f"NewRanks_{idx}_ps_relevance.csv")
-    ranked_lists.append(ranked_list)
+    ranked_lists.append([["dummy"]] + ranked_list)
     
 
   # print(modified_query)
