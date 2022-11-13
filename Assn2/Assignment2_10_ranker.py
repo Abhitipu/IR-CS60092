@@ -4,17 +4,22 @@ import pandas as pd
 from collections import Counter
 from tqdm import tqdm
 import time
+import sys
 import ipdb
 np.seterr(divide='ignore', invalid='ignore')
 
 
 def custom_cosine_sim(tokensA, tokensB):
   """
-  doc -- (t, tfidf) ...
-  query -- (t, tdidf) ...
+  Returns the cosing similarity between two vectors
+  
+  Args:
+    tokensA: Dictionary of token_id to freq
+    tokensB: Dictionary of token_id to freq
+  
+  Returns:
+    cosine similarity
   """
-  # print(tokensA)
-  # print(tokensB)
   cosine_sim = 0
   for idA, tfidf in tokensA.items():
     if idA in tokensB:
@@ -102,7 +107,7 @@ def transpose_inv_idx(inv_idx):
   Returns:
       new_idx(dict): doc_id to (token, freq) mapping
       mapping(dict): token to token_id mapping
-      idf(dict): token to idf mapping
+      df(dict): token to df mapping
   """
   
   # df = dict()
@@ -118,8 +123,6 @@ def transpose_inv_idx(inv_idx):
         if cord_id not in new_idx:
           new_idx[cord_id] = []
         new_idx[cord_id].append((idx, freq))
-  
-  # df = list(df.values())
   
   return new_idx, mapper, np.array(df)
 
@@ -185,8 +188,17 @@ def get_ranks(query_tf_idf, doc_tf_idf, output_file):
 
 
 if __name__ == "__main__":
-  inv_idx_file = "model_queries_10.bin"
-  query_file = "./Data/queries_10.txt"
+  n = len(sys.argv)
+  if n < 3:
+    print("Usage: python3 search.py <path_to_data> <path_to_index>")
+    sys.exit(0)
+    
+  dataset_dir = sys.argv[1]
+  inv_idx_file = sys.argv[2]
+  # inv_idx_file = "model_queries_10.bin"
+  
+  query_file = f"{dataset_dir}/queries_10.txt"
+  
   configs = {
     "lnc.ltc": "Assignment2_10_ranked_list_A.csv",
     "lnc.lpc": "Assignment2_10_ranked_list_B.csv",

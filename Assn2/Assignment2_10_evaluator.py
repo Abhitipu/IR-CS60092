@@ -6,7 +6,11 @@ import sys
 import ipdb
 
 def get_rel_dict(ground_truth_df):
-  ground_truth = [{} for i in range(36)]
+  """
+    Returns a dictionary of query_id -> cord_id -> (judgement, iteration)
+    TODO: check hardcoded value
+  """
+  ground_truth = [{} for i in range(len(ground_truth_df))]
   # queryid -> {} cord-id-> (judgement, iteration)
   for index, rows in ground_truth_df.iterrows():
     query_id = rows['topic-id']
@@ -47,6 +51,10 @@ def compute_average_precision(ground_truth, rank_list, k):
   return average_precision  #note the offset
 
 def ndcg(ground_truth, rank_list, k):
+  """
+    Computes the normalized discounted cumulative gain
+    using the ground truth and the rank list
+  """
   query_id = 1
   ndcg = []
   for row in rank_list[1:]:
@@ -111,6 +119,7 @@ if __name__ == "__main__":
   # list of dictionaries, each mapping cord_id -> relevance score, index in list = query_id
   ground_truth = get_rel_dict(ground_truth_df)
   
+  # Compute all the metrics  
   AP10 = compute_average_precision(ground_truth, ranked_list, 10)
   AP20 = compute_average_precision(ground_truth, ranked_list, 20)
 
@@ -125,6 +134,8 @@ if __name__ == "__main__":
     'NDCG@20' : NDCG20 + [np.mean(NDCG20)],
     
   }
+  
+  # save the metrics to a csv file
   result_df = pd.DataFrame(data_dict)
   result_df.to_csv(output_file, index=False)
 
