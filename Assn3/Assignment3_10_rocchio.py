@@ -5,16 +5,14 @@ from collections import Counter
 from tqdm import tqdm
 import time
 import ipdb
-# import threading
-# general_lock = threading.Lock()
+import sys
 
 def custom_cosine_sim(tokensA, tokensB):
   """
   doc -- (t, tfidf) ...
   query -- (t, tdidf) ...
+  return cosine similarity
   """
-  # print(tokensA)
-  # print(tokensB)
   cosine_sim = 0
   for idA, tfidf in tokensA.items():
     if idA in tokensB:
@@ -26,9 +24,8 @@ def custom_add(tokensA, tokensB):
   """
   doc -- (t, tfidf) ...
   query -- (t, tdidf) ...
+  returns sum of two vectors
   """
-  # print(tokensA)
-  # print(tokensB)
   term_ids = set()
 
   for term_id in tokensA:
@@ -51,6 +48,7 @@ def compute_average_precision(ground_truth, rank_list, k):
   """
     Ground truth : query_id -> cord_id -> (judgement, iteration)
     rank list: query_id -> ranked list of cord_id
+    Returns average precision for each query
   """
   # non zero judgments are relevant
   query_id = 1
@@ -76,6 +74,10 @@ def compute_average_precision(ground_truth, rank_list, k):
   return average_precision  #note the offset
 
 def ndcg(ground_truth, rank_list, k):
+  """
+    Computes normalized discounted cumulative gain
+    for each query with k as the cutoff
+  """
   query_id = 1
   ndcg = []
   for row in rank_list[1:]:
@@ -274,38 +276,28 @@ def relevance_feedback(ground_truth, ranked_list, doc_tf_idf, k):
     pos_feedback = dict()
     pos_vector_count = 0
     
-    # neg_feedback = np.zeros(V)
     neg_feedback = dict()
     neg_vector_count = 0
-    # prec = [] #prec@k
-    # relevant_cords = 0
 
     loop_k = min(k, len(row))
-    # ipdb.set_trace()
     for i in range(loop_k):
       cord_id = row[i]
       doc_vector = doc_tf_idf[cord_id]
       if cord_id in ground_truth[query_id] and (ground_truth[query_id][cord_id][0]==2):
         # relevant doc
-        # pos_feedback += doc_vector #
         pos_feedback = custom_add(pos_feedback, doc_vector)
         pos_vector_count+=1
       else:
         # irrelevant doc
-        # neg_feedback += doc_vector #
         neg_feedback = custom_add(neg_feedback, doc_vector)
         neg_vector_count+=1
-    # print(query_id, len(prec), k)
-    # 
     if(pos_vector_count != 0):
       for idx, v in pos_feedback.items():
         pos_feedback[idx] /= pos_vector_count
-      # pos_feedback/=pos_vector_count #
     
     if(neg_vector_count != 0):
       for idx, v in neg_feedback.items():
         neg_feedback[idx] /= neg_vector_count
-      # neg_vector_count/=neg_vector_count #
     
     query_id +=1
     feedback.append((pos_feedback, neg_feedback))
@@ -331,11 +323,8 @@ def pseudo_relevance_feedback(ground_truth, ranked_list, doc_tf_idf, k):
     
     neg_feedback = dict()
     neg_vector_count = 0
-    # prec = [] #prec@k
-    # relevant_cords = 0
 
     loop_k = min(k, len(row))
-    # ipdb.set_trace()
     for i in range(loop_k):
       cord_id = row[i]
       doc_vector = doc_tf_idf[cord_id]
@@ -344,8 +333,6 @@ def pseudo_relevance_feedback(ground_truth, ranked_list, doc_tf_idf, k):
       pos_feedback = custom_add(pos_feedback, doc_vector)
       pos_vector_count+=1
       
-    # print(query_id, len(prec), k)
-    # 
     if(pos_vector_count != 0):
       for idx, v in pos_feedback.items():
         pos_feedback[idx] /= pos_vector_count
@@ -354,9 +341,12 @@ def pseudo_relevance_feedback(ground_truth, ranked_list, doc_tf_idf, k):
     feedback.append((pos_feedback, neg_feedback))
     
   return feedback
+
 def modify_query(query_vector, feedback, config):
-  # query_vector = {k: v for k,v in query_vector_list}
-  
+  """
+    Returns the modified query vector
+    Modified query = (1 - alpha) * query_vector + alpha * (pos_feedback - beta * neg_feedback)
+  """
   alpha = config[0]
   beta = config[1]
   gamma = config[2]
@@ -383,26 +373,6 @@ def modify_query(query_vector, feedback, config):
     if term_id in neg_feedback:
       modified_query[term_id] -= gamma * neg_feedback[term_id]
   return modified_query
-
-# def thread_target(word_list, op_type, V, N, df, query_vectors, doc_id, scores):
-#     doc_vector = compute_tf_idf(word_list, op_type, V, N, df)
-#     # 6
-#     values = []
-#     for q_vec in query_vectors:
-#       values.append(np.dot(q_vec, doc_vector))
-#     # value = np.dot(query_vector, doc_vector)
-#     # temp_scores = []
-#     # for val in values:
-#     #   temp_scores.append((doc_id, val))
-
-#     idx = 0
-#     # (6, 37000) -- (6, 50)
-#     general_lock.acquire()
-#     for val in values:
-#       scores[idx].append((doc_id, val))
-#       idx+=1
-#     # scores.append(temp_scores) # temp_scores will be 6 different score
-#     general_lock.release()
 
 
 def get_ranks(query_tf_idf, doc_tf_idf, output_file):
@@ -438,11 +408,16 @@ def get_ranks(query_tf_idf, doc_tf_idf, output_file):
   return ranked_list  
       
 if __name__ == "__main__":
+  n = len(sys.argv)
+  if n < 5:
+    print("Error format")
+    
   #filenames
-  inv_idx_file = "model_queries_10.bin"
-  query_file = "./Data/queries_10.txt"
-  ground_truth_file = "./Data/qrels.csv"
-  ranked_file = "./Assignment2_10_ranked_list_A.csv"
+  query_file = f"{sys.argv[1]}/queries_10.txt"
+  inv_idx_file = sys.argv[2]
+  ground_truth_file = sys.argv[3]
+  ranked_file = sys.argv[4]
+  
   relevance_file = "./Assignment3_10_rocchio_RF_metrics.csv"
   pseudo_relevance_file = "./Assignment3_10_rocchio_PsRF_metrics.csv"
 
@@ -479,8 +454,6 @@ if __name__ == "__main__":
   pseudo_feedback = pseudo_relevance_feedback(ground_truth, ranked_list, doc_tf_idf, 10)
   query_tf_idf = {query_id: compute_tf_idf(query_token_list, query_method, V, N, df) for query_id, query_token_list in query_vectors.items()}  
 
-  # ipdb.set_trace()
-
   # alpha, beta, gamma
   rf_config = [
     [1, 1, 0.5], 
@@ -488,19 +461,6 @@ if __name__ == "__main__":
     [1, 0.5, 0]
   ]
 
-  
-  # [1, 1, 0.5], relevance
-  # [1, 1, 0.5], psuedo
-  # [0.5, 0.5, 0.5], relevance
-  # [0.5, 0.5, 0.5], psuedo
-  # [1, 0.5, 0] relevance
-  # [1, 0.5, 0] psuedo
-  # for query_id, query_vector in tqdm(query_vectors.items()):
-  #     modified_query = []
-  #     for config in rf_config:
-  #       modified_query.append(modify_query(query_vector, feedback[query_id-1], config))
-  #       modified_query.append(modify_query(query_vector, pseudo_feedback[query_id-1], config))
-  #     modified_queries.append(modified_query)
   ranked_lists= []
   for idx, config in enumerate(rf_config):
     # one of six
@@ -508,15 +468,12 @@ if __name__ == "__main__":
     ranked_list = get_ranks(modified_query_tf_idf, doc_tf_idf, f"NewRanks_{idx}_relevance.csv")
     
     ranked_lists.append([["dummy"]] + ranked_list) # for fixing the offset
-    # ipdb.set_trace()
-    # break
     modified_query_tf_idf = {query_id: modify_query(query_tf_idf[query_id],pseudo_feedback[query_id-1], config ) for query_id, query_token_list in query_vectors.items()}  
     ranked_list = get_ranks(modified_query_tf_idf, doc_tf_idf, f"NewRanks_{idx}_ps_relevance.csv")
     ranked_lists.append(ranked_list)
     
 
-  # print(modified_query)
-  # ipdb.set_trace()    
+  # Merging the six results into two
   ctr = 0 
   with open(pseudo_relevance_file, "w") as f:
     f.write("alpha, beta, gamma, mAP@20, NDCG20 \n")
@@ -530,8 +487,6 @@ if __name__ == "__main__":
     fname = ""
     mAP20 = np.mean(compute_average_precision(ground_truth, ranked_list, 20))
     nDCG = np.mean(ndcg(ground_truth, ranked_list, 20))
-    # ipdb.set_trace()
-    # print(mAP20, nDCG)
     k = ctr
     if ctr%2 == 1:
       k = k - 1
@@ -543,9 +498,6 @@ if __name__ == "__main__":
       fname = pseudo_relevance_file 
     
     with open(fname, "a") as f:
-      # ipdb.set_trace()
-      
-      # for a, b in zip(mAP20, nDCG):
       f.write(str(rf_config[k][0])+", ")
       f.write(str(rf_config[k][1])+", ")
       f.write(str(rf_config[k][2])+", ")
