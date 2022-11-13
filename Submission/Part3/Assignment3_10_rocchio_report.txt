@@ -1,14 +1,14 @@
 Weightage schemes(LNC-LTC) v/s Relevance Feedback
 
 the mean average precision for the top-20 documents (averaged over values of alpha, beta, gamma):
-lnc-ltc : 0.583
-Relevance : 0.585
+lnc-ltc : 0.325
+Relevance : 0.584
 
 Normalized Discounted Cumulative Gain over the top-20 documents (averaged over values of alpha, beta, gamma):
-lnc-ltc : 0.32
-Relevance : 0.32
+lnc-ltc : 0.162
+Relevance : 0.321
 
-The results of part 3 show a slight betterment in results but that is to be expected as relevance feedback uses feedback provided by the user to remodel queries based on the documents relevant and irrelevant to the query itself, which is theoritically expected to give better results. Rocchio's Algorithm is used in part 3 where the queries are re-modelled according to the following rule:
+The results of part 3 show a significant (almost 2 fold) betterment in results but that is to be expected as relevance feedback uses feedback provided by the user to remodel queries based on the documents relevant and irrelevant to the query itself, which is theoretically expected to give better results. Rocchio's Algorithm is used in part 3 where the queries are re-modelled according to the following rule:
 
 modified_query_vector = alpha * original_query_vector + beta * (avg. of all relevant document vectors) - gamma * (avg. of all irrelevant document vectors) 
 [for pseudo relevance, there are no irrelevant documents so the last computation subpart amounts to zero.]
@@ -16,15 +16,15 @@ modified_query_vector = alpha * original_query_vector + beta * (avg. of all rele
 Pseudo Relevance v/s Relevance Feedback
 
 the mean average precision for the top-20 documents (averaged over values of alpha, beta, gamma):
-Pseudo Relevance : 0.293
-Relevance : 0.585
+Pseudo Relevance : 0.295
+Relevance : 0.584
 
 Normalized Discounted Cumulative Gain over the top-20 documents (averaged over values of alpha, beta, gamma):
-Pseudo Relevance : 0.172
-Relevance : 0.31
+Pseudo Relevance : 0.173
+Relevance : 0.321
 
 As expected from theoretical results, Relevance Feedback is a better metric as it has better cumulative gain and Average precision of query hits by a magnitude of 2. 
 
-Pseudo relevance gives comparitively less accurate results than the relevance feedback method as the psuedo relevance feedback uses the the relevance information which is provided by the user whereas the pseudo-relevance feedback method assumes the the top hits of the result to be the set of of top relevant documents. While this may automate the manual process of user information collection, it can cause query drift and cannot produce results that are as accurate as the relevance feedback system. (While this argument can be nullified based on the accuracy of the user data collected, we assume the collected data to be mostly correct) 
+Pseudo relevance gives comparitively less accurate results than the relevance feedback method as the psuedo relevance feedback uses the the relevance information which is provided by the user whereas the pseudo-relevance feedback method assumes the the top hits of the result to be the set of of top relevant documents. While this may automate the manual process of user information collection, it can cause query drift and cannot produce results that are as accurate as the relevance feedback system. (While this argument can be nullified based on the accuracy of the user data collected, we assume the collected data to be mostly correct). Although PsRF increases the NDCG@20 value, it slightly reduces the MAP when compared with the lnc.ltc method.
 
 
