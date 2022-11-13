@@ -1,7 +1,7 @@
 Weightage schemes(LNC-LTC) v/s Relevance Feedback
 
 the mean average precision for the top-20 documents (averaged over values of alpha, beta, gamma):
-lnc-ltc : 0.325
+lnc-ltc : 0.300
 Relevance : 0.584
 
 Normalized Discounted Cumulative Gain over the top-20 documents (averaged over values of alpha, beta, gamma):
