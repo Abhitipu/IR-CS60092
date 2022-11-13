@@ -16,14 +16,14 @@ modified_query_vector = alpha * original_query_vector + beta * (avg. of all rele
 Pseudo Relevance v/s Relevance Feedback
 
 the mean average precision for the top-20 documents (averaged over values of alpha, beta, gamma):
-Pseudo Relevance : 0.099
+Pseudo Relevance : 0.293
 Relevance : 0.585
 
 Normalized Discounted Cumulative Gain over the top-20 documents (averaged over values of alpha, beta, gamma):
-Pseudo Relevance : 0.018
+Pseudo Relevance : 0.172
 Relevance : 0.31
 
-As expected from theoritical results, Relevance Feedback is a better metric as it has better cumulative gain and Average precision of query hits by a magnitude of 10. 
+As expected from theoretical results, Relevance Feedback is a better metric as it has better cumulative gain and Average precision of query hits by a magnitude of 2. 
 
 Pseudo relevance gives comparitively less accurate results than the relevance feedback method as the psuedo relevance feedback uses the the relevance information which is provided by the user whereas the pseudo-relevance feedback method assumes the the top hits of the result to be the set of of top relevant documents. While this may automate the manual process of user information collection, it can cause query drift and cannot produce results that are as accurate as the relevance feedback system. (While this argument can be nullified based on the accuracy of the user data collected, we assume the collected data to be mostly correct) 
 

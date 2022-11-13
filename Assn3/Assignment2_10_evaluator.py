@@ -6,6 +6,9 @@ import sys
 import ipdb
 
 def get_rel_dict(ground_truth_df):
+  """
+  Returns a dictionary of query_id -> cord_id -> (judgement, iteration)
+  """
   ground_truth = [{} for i in range(36)]
   # queryid -> {} cord-id-> (judgement, iteration)
   for index, rows in ground_truth_df.iterrows():
@@ -88,15 +91,13 @@ def ndcg(ground_truth, rank_list, k):
     
 if __name__ == "__main__":
   n = len(sys.argv)
-  # # print(n)
-  # if n < 3:
-  #   raise Exception("Error in format")
+  if n < 3:
+    raise Exception("Error in format")
   
-  ground_truth_file = "./Data/qrels.csv"
-  ranked_file = "NewRanks_0_relevance.csv"
+  ground_truth_file = sys.argv[1]
+  ranked_file = sys.argv[2]
   output_file = "./Assignment2_10_metrics_"+ranked_file[-5:]
-  # print(output_file)
-  # exit()
+  
   ground_truth_df = pd.read_csv(ground_truth_file)
   ranked_list_df = pd.read_csv(ranked_file, header=None)
   ranked_list = [["dummy"]]

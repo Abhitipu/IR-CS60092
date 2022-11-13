@@ -1,4 +1,5 @@
 import pickle
+import sys
 import numpy as np
 import pandas as pd
 from collections import Counter
@@ -31,34 +32,6 @@ def transpose_inv_idx(inv_idx):
   
   return new_idx, mapper, df
 
-
-def get_query_postings(queries, mapper):
-  """
-  Get a map from query ids to tokens
-
-  Args:
-      queries (DataFrame): The queries dataframe
-      mapper (dict): token to token_id mapping
-
-  Returns:
-      
-      query_vector: The mapping from query_id to tokens
-  """
-  
-  query_vector = dict()
-
-  for idx, query in zip(queries["topic-id"], queries["query"]):
-    words = query.split()
-    query_vector[idx] = []
-    tokens = []
-
-    for word in words:
-      if word in mapper:
-        tokens.append(mapper[word]) 
-            
-    query_vector[idx] = list(Counter(tokens).items())
-  
-  return query_vector
 
 def compute_tf_idf(word_list, op_type, V, N, df):
   """
@@ -117,17 +90,22 @@ def compute_tf_idf(word_list, op_type, V, N, df):
   return final_vector / (np.linalg.norm(final_vector) + 1e-20) if op_type[2] == "c" else final_vector
 
 if __name__ == "__main__":
-    inv_idx_file = "model_queries_10.bin"
-    query_file = "./Data/queries_10.txt"
-    ranked_file = "./NewRanks_0_ps_relevance.csv"
+    n = len(sys.argv)
+    if n < 4:
+      print("Error format")
+    
+    dataset_dir = sys.argv[1]
+    inv_idx_file = sys.argv[2]
+    ranked_file = sys.argv[3]
     output_file = "./Assignment3_10_important_words.csv"
+    
+    scheme = "lnc.ltc"
+    doc_method, _ = scheme.split(".")
     
     with open(inv_idx_file, 'rb') as f:
         inv_idx = pickle.load(f)
 
     new_idx, mapper, df = transpose_inv_idx(inv_idx)  
-    queries = pd.read_csv(query_file)
-    query_vectors = get_query_postings(queries, mapper)
     
     ranked_list_df = pd.read_csv(ranked_file, header=None)
     
@@ -142,6 +120,6 @@ if __name__ == "__main__":
         for index, rows in ranked_list_df.iterrows():
             mean_vec = np.zeros(V)
             for idx, cord_id in enumerate(list(rows[1:n_docs+1])):
-                mean_vec = mean_vec + 1 / (idx + 1) * (compute_tf_idf(new_idx[cord_id], "lnc", V, N,df) - mean_vec)
+                mean_vec = mean_vec + 1 / (idx + 1) * (compute_tf_idf(new_idx[cord_id], doc_method, V, N,df) - mean_vec)
             sorted_indices = np.argsort(mean_vec)[::-1]
             f.write(f"{rows[0]}:{','.join([inv_mapper[idx] for idx in sorted_indices[:n_words]])}\n")        
